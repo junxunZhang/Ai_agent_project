@@ -6,10 +6,33 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import r2_score
 
 from .config import FIGURES_DIR, CORE_ABSORBANCE_COLUMNS, TARGET_COLUMNS
 
 sns.set_theme(style='whitegrid')
+
+
+def _add_r2_annotation(ax, subset: pd.DataFrame, x_col: str, y_col: str) -> None:
+    if subset.empty:
+        return
+    model = LinearRegression()
+    X = subset[[x_col]].to_numpy()
+    y = subset[y_col].to_numpy()
+    model.fit(X, y)
+    y_pred = model.predict(X)
+    r2 = r2_score(y, y_pred)
+    ax.text(
+        0.03,
+        0.95,
+        f'R² = {r2:.3f}',
+        transform=ax.transAxes,
+        ha='left',
+        va='top',
+        fontsize=10,
+        bbox={'boxstyle': 'round,pad=0.25', 'facecolor': 'white', 'alpha': 0.8, 'edgecolor': 'gray'},
+    )
 
 
 def plot_missing_values(missing_table: pd.DataFrame, output_path: Path | None = None) -> Path:
@@ -82,6 +105,7 @@ def plot_linear_regression_lines_by_target(df: pd.DataFrame, output_path: Path |
             scatter_kws={'s': 24, 'alpha': 0.7},
             line_kws={'color': 'red', 'linewidth': 2},
         )
+        _add_r2_annotation(ax, subset, primary_feature, target)
         ax.set_title(f'Linear Fit: {primary_feature} vs {target}')
         ax.set_xlabel(primary_feature)
         ax.set_ylabel(target)
@@ -108,6 +132,7 @@ def plot_core_wavelength_regression_grid(df: pd.DataFrame, output_path: Path | N
                 scatter_kws={'s': 16, 'alpha': 0.55},
                 line_kws={'color': 'red', 'linewidth': 1.8},
             )
+            _add_r2_annotation(ax, subset, feature, target)
             if row_idx == 0:
                 ax.set_title(feature)
             if col_idx == 0:
