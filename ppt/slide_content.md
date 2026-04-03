@@ -18,7 +18,10 @@
   - all absorbance + machine
   - all absorbance + machine + personal
 - Main baseline: SVR
-- Comparison model: Linear Regression
+- Comparison models:
+  - Linear Regression
+  - Random Forest Regressor
+  - KNN Regressor
 - Five-fold CV with MAE, MSE, RMSE, R²
 
 ## 4. Feature Selection Workflow
@@ -28,10 +31,11 @@
 - Transparent reporting when selected subsets help interpretation but not accuracy
 
 ## 5. Demo Result
-- Strongest results came from full-feature SVR models for most toxin targets
-- Full feature sets outperformed absorbance-only models
+- Strongest results came from full-feature SVR models for urea, creatinine, phosphorus, and inferred uric acid
+- KNN performed best for potassium and beta2-microglobulin in the expanded comparison
+- Full feature sets generally outperformed absorbance-only models
 - Important predictive features repeatedly included 285nm, 310nm, current ultrafiltration volume, and several machine/context variables depending on target
-- Session-level predicted-vs-actual concentration curves were generated for best models
+- Session-level predicted-vs-actual concentration curves and paper-style predicted-vs-actual panels were generated for the strongest model per target
 
 ## 6. Limitations and Next Steps
 - Small repeated-measure dataset

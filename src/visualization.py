@@ -285,8 +285,12 @@ def plot_predicted_vs_actual_panels(prediction_df: pd.DataFrame, output_path: Pa
             r2 = r2_score(y, y_pred)
             slope = model.coef_[0]
             intercept = model.intercept_
+            best_model = subset['model'].iloc[0] if 'model' in subset.columns and not subset.empty else 'unknown'
+            feature_set = subset['feature_set'].iloc[0] if 'feature_set' in subset.columns and not subset.empty else 'unknown'
             ax.text(0.03, 0.95, panel, transform=ax.transAxes, ha='left', va='top', fontsize=12, fontweight='bold')
             ax.text(0.05, 0.88, target, transform=ax.transAxes, ha='left', va='top', fontsize=11, fontweight='bold')
+            ax.text(0.05, 0.79, f'model: {best_model}', transform=ax.transAxes, ha='left', va='top', fontsize=9)
+            ax.text(0.05, 0.72, f'features: {feature_set}', transform=ax.transAxes, ha='left', va='top', fontsize=8)
             ax.text(
                 0.55,
                 0.10,

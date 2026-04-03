@@ -75,7 +75,10 @@ It also includes all verified dialysis machine parameters:
 ### Models
 
 - Main baseline: **SVR**
-- Comparison model: **Linear Regression**
+- Comparison models:
+  - **Linear Regression**
+  - **Random Forest Regressor**
+  - **KNN Regressor**
 
 ### Feature selection
 
@@ -90,16 +93,16 @@ The project compares **full features vs selected features** under five-fold cros
 
 The expanded full-feature models generally outperform absorbance-only models.
 
-Representative best full-model results:
+Representative best results in the expanded model comparison:
 
-- `urea`: SVR with all absorbance + machine + personal, **R² ≈ 0.938**
-- `creatinine`: SVR with all absorbance + machine + personal, **R² ≈ 0.903**
-- `acid_inferred_uric_acid`: SVR with all absorbance + machine + personal, **R² ≈ 0.914**
-- `phosphorus`: SVR with all absorbance + machine + personal, **R² ≈ 0.876**
-- `potassium`: SVR with all absorbance + machine + personal, **R² ≈ 0.549**
-- `beta2_microglobulin`: Linear Regression with all absorbance + machine + personal, **R² ≈ 0.788**
+- `urea`: **SVR**, all absorbance + machine + personal, **R² ≈ 0.938**
+- `creatinine`: **SVR**, all absorbance + machine + personal, **R² ≈ 0.903**
+- `acid_inferred_uric_acid`: **SVR**, all absorbance + machine + personal, **R² ≈ 0.914**
+- `phosphorus`: **SVR**, all absorbance + machine + personal, **R² ≈ 0.876**
+- `potassium`: **KNN Regressor**, all absorbance + machine + personal, **R² ≈ 0.685**
+- `beta2_microglobulin`: **KNN Regressor**, selected absorbance + machine + personal subset, **R² ≈ 0.872**
 
-Important note: the current mutual-information-based selected subsets improve interpretability, but they **do not consistently outperform the full feature models**. This is reported transparently in the outputs.
+Important note: the current mutual-information-based selected subsets improve interpretability, but they **do not consistently outperform the full feature models** across all targets. However, selected subsets do help certain targets, especially `beta2_microglobulin` in the expanded model comparison.
 
 ## Project structure
 

@@ -5,7 +5,9 @@ from typing import Dict, List, Tuple
 import numpy as np
 import pandas as pd
 from sklearn.impute import SimpleImputer
+from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LinearRegression
+from sklearn.neighbors import KNeighborsRegressor
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from sklearn.model_selection import KFold, cross_val_predict
 from sklearn.pipeline import Pipeline
@@ -18,16 +20,18 @@ from .config import N_SPLITS, RANDOM_STATE, TARGET_COLUMNS
 MODELS = {
     'linear_regression': LinearRegression(),
     'svr_rbf': SVR(kernel='rbf', C=10.0, epsilon=0.1),
+    'random_forest': RandomForestRegressor(n_estimators=300, random_state=RANDOM_STATE, n_jobs=-1),
+    'knn_regressor': KNeighborsRegressor(n_neighbors=7, weights='distance'),
 }
 
 
 def make_pipeline(model_name: str) -> Pipeline:
     model = MODELS[model_name]
-    return Pipeline([
-        ('imputer', SimpleImputer(strategy='median')),
-        ('scaler', StandardScaler()),
-        ('model', model),
-    ])
+    steps = [('imputer', SimpleImputer(strategy='median'))]
+    if model_name in {'linear_regression', 'svr_rbf', 'knn_regressor'}:
+        steps.append(('scaler', StandardScaler()))
+    steps.append(('model', model))
+    return Pipeline(steps)
 
 
 def evaluate_regression(y_true: np.ndarray, y_pred: np.ndarray) -> Dict[str, float]:
