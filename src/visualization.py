@@ -66,6 +66,32 @@ def plot_absorbance_scatter_grid(df: pd.DataFrame, output_path: Path | None = No
     return output_path
 
 
+def plot_linear_regression_lines_by_target(df: pd.DataFrame, output_path: Path | None = None) -> Path:
+    output_path = output_path or FIGURES_DIR / 'linear_regression_lines_by_target.png'
+    primary_feature = CORE_ABSORBANCE_COLUMNS[0]
+    fig, axes = plt.subplots(2, 3, figsize=(15, 9))
+    axes = axes.flatten()
+
+    for ax, target in zip(axes, TARGET_COLUMNS):
+        subset = df[[primary_feature, target]].dropna()
+        sns.regplot(
+            data=subset,
+            x=primary_feature,
+            y=target,
+            ax=ax,
+            scatter_kws={'s': 24, 'alpha': 0.7},
+            line_kws={'color': 'red', 'linewidth': 2},
+        )
+        ax.set_title(f'Linear Fit: {primary_feature} vs {target}')
+        ax.set_xlabel(primary_feature)
+        ax.set_ylabel(target)
+
+    fig.tight_layout()
+    fig.savefig(output_path, dpi=200)
+    plt.close(fig)
+    return output_path
+
+
 def plot_model_comparison(results: pd.DataFrame, output_path: Path | None = None) -> Path:
     output_path = output_path or FIGURES_DIR / 'model_comparison_r2.png'
     fig, ax = plt.subplots(figsize=(12, 6))

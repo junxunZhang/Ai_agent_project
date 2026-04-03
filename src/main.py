@@ -16,6 +16,7 @@ from .utils import ensure_directories
 from .visualization import (
     plot_absorbance_scatter_grid,
     plot_correlation_heatmap,
+    plot_linear_regression_lines_by_target,
     plot_missing_values,
     plot_model_comparison,
     plot_target_distributions,
@@ -55,6 +56,7 @@ def run() -> None:
     plot_target_distributions(analysis_df)
     plot_correlation_heatmap(analysis_df)
     plot_absorbance_scatter_grid(analysis_df)
+    plot_linear_regression_lines_by_target(analysis_df)
     if not results.empty:
         plot_model_comparison(results)
 
