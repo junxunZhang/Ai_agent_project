@@ -153,6 +153,7 @@ Ai_agent_project/
 - `outputs/reports/dataset_profile.md`
 - `outputs/reports/analysis_summary.md`
 - `outputs/reports/feature_selection_report.md`
+- `outputs/reports/final_comparison_report.md`
 - `outputs/reports/limitations_and_next_steps.md`
 
 ## Setup
