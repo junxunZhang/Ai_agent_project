@@ -161,3 +161,45 @@ def plot_model_comparison(results: pd.DataFrame, output_path: Path | None = None
     fig.savefig(output_path, dpi=200)
     plt.close(fig)
     return output_path
+
+
+def plot_session_prediction_curves(session_predictions: dict[str, pd.DataFrame], output_path: Path | None = None) -> Path:
+    output_path = output_path or FIGURES_DIR / 'session_prediction_curves_best_models.png'
+    ordered_targets = [target for target in TARGET_COLUMNS if target in session_predictions]
+    fig, axes = plt.subplots(2, 3, figsize=(16, 10))
+    axes = axes.flatten()
+
+    for ax, target in zip(axes, ordered_targets):
+        df = session_predictions[target].copy()
+        session_error = (
+            df.groupby('session_id')
+            .apply(lambda g: ((g['actual'] - g['predicted']) ** 2).mean())
+            .sort_values()
+        )
+        session_id = session_error.index[0]
+        plot_df = df[df['session_id'] == session_id].sort_values('collection_time_min')
+        ax.plot(plot_df['collection_time_min'], plot_df['predicted'], color='black', linewidth=1.8, label='Predicted conc.')
+        ax.scatter(plot_df['collection_time_min'], plot_df['actual'], color='red', s=26, marker='^', label='Actual conc.')
+        ax.set_title(target)
+        ax.set_xlabel('HD time (min)')
+        ax.set_ylabel('Concentration')
+        ax.text(
+            0.03,
+            0.08,
+            f"session: {session_id}",
+            transform=ax.transAxes,
+            ha='left',
+            va='bottom',
+            fontsize=9,
+            bbox={'boxstyle': 'round,pad=0.2', 'facecolor': 'white', 'alpha': 0.75, 'edgecolor': 'gray'},
+        )
+        ax.legend(loc='best', fontsize=8, frameon=False)
+
+    for idx in range(len(ordered_targets), len(axes)):
+        axes[idx].axis('off')
+
+    fig.suptitle('Best-Model Predicted vs Actual Concentration Curves by HD Session', y=0.995)
+    fig.tight_layout(rect=[0, 0, 1, 0.98])
+    fig.savefig(output_path, dpi=220)
+    plt.close(fig)
+    return output_path

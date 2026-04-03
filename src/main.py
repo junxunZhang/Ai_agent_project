@@ -9,7 +9,7 @@ from .config import FIGURES_DIR, OUTPUT_DIR, REPORTS_DIR, TABLES_DIR
 from .data_loader import load_primary_dataset
 from .evaluation import summarize_best_models
 from .feature_sets import get_feature_sets
-from .modeling import run_baselines
+from .modeling import build_session_predictions, run_baselines
 from .profiling import descriptive_statistics, missing_values_table, session_summary, summarize_dataset
 from .reporting import write_analysis_summary, write_dataset_profile, write_limitations_report
 from .utils import ensure_directories
@@ -20,6 +20,7 @@ from .visualization import (
     plot_linear_regression_lines_by_target,
     plot_missing_values,
     plot_model_comparison,
+    plot_session_prediction_curves,
     plot_target_distributions,
 )
 
@@ -38,6 +39,7 @@ def run() -> None:
     feature_sets = get_feature_sets()
     results = run_baselines(analysis_df, feature_sets)
     best_models = summarize_best_models(results)
+    session_predictions = build_session_predictions(analysis_df, best_models, feature_sets)
 
     analysis_df.head(20).to_csv(TABLES_DIR / 'cleaned_dataset_preview.csv', index=False)
     pd.DataFrame([
@@ -61,6 +63,8 @@ def run() -> None:
     plot_core_wavelength_regression_grid(analysis_df)
     if not results.empty:
         plot_model_comparison(results)
+    if session_predictions:
+        plot_session_prediction_curves(session_predictions)
 
 
 if __name__ == '__main__':

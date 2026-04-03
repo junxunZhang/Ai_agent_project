@@ -40,6 +40,38 @@ def evaluate_regression(y_true: np.ndarray, y_pred: np.ndarray) -> Dict[str, flo
     }
 
 
+def fit_best_models(df: pd.DataFrame, best_models: pd.DataFrame, feature_sets: Dict[str, List[str]]) -> Dict[str, Pipeline]:
+    fitted_models: Dict[str, Pipeline] = {}
+    for _, row in best_models.iterrows():
+        target = row['target']
+        feature_set_name = row['feature_set']
+        model_name = row['model']
+        subset = df.dropna(subset=[target]).copy()
+        features = [feature for feature in feature_sets[feature_set_name] if feature in subset.columns]
+        if not features:
+            continue
+        pipeline = make_pipeline(model_name)
+        pipeline.fit(subset[features], subset[target])
+        fitted_models[target] = pipeline
+    return fitted_models
+
+
+def build_session_predictions(df: pd.DataFrame, best_models: pd.DataFrame, feature_sets: Dict[str, List[str]]) -> Dict[str, pd.DataFrame]:
+    fitted_models = fit_best_models(df, best_models, feature_sets)
+    predictions: Dict[str, pd.DataFrame] = {}
+    for _, row in best_models.iterrows():
+        target = row['target']
+        feature_set_name = row['feature_set']
+        subset = df.dropna(subset=[target]).copy()
+        features = [feature for feature in feature_sets[feature_set_name] if feature in subset.columns]
+        if target not in fitted_models or not features:
+            continue
+        subset = subset[['session_id', 'collection_time_min', target] + features].copy()
+        subset['predicted'] = fitted_models[target].predict(subset[features])
+        predictions[target] = subset[['session_id', 'collection_time_min', target, 'predicted']].rename(columns={target: 'actual'})
+    return predictions
+
+
 def run_baselines(df: pd.DataFrame, feature_sets: Dict[str, List[str]]) -> pd.DataFrame:
     rows = []
     cv = KFold(n_splits=N_SPLITS, shuffle=True, random_state=RANDOM_STATE)
