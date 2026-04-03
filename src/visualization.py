@@ -259,7 +259,7 @@ def plot_session_prediction_curves(session_predictions: dict[str, pd.DataFrame],
 
 
 def plot_predicted_vs_actual_panels(prediction_df: pd.DataFrame, output_path: Path | None = None) -> Path:
-    output_path = output_path or FIGURES_DIR / 'predicted_vs_actual_panels.png'
+    output_path = output_path or FIGURES_DIR / 'predicted_vs_actual_panels_final.png'
     ordered_targets = [target for target in TARGET_COLUMNS if target in prediction_df['target'].unique()]
     fig, axes = plt.subplots(2, 3, figsize=(16, 10))
     axes = axes.flatten()
@@ -267,26 +267,15 @@ def plot_predicted_vs_actual_panels(prediction_df: pd.DataFrame, output_path: Pa
 
     for ax, target, panel in zip(axes, ordered_targets, panel_labels):
         subset = prediction_df[prediction_df['target'] == target].dropna(subset=['predicted', 'actual']).copy()
-        sns.scatterplot(data=subset, x='predicted', y='actual', ax=ax, color='black', s=18, edgecolor='none')
+        sns.scatterplot(data=subset, x='actual', y='predicted', ax=ax, color='black', s=18, edgecolor='none')
         if len(subset) >= 2:
-            sns.regplot(
-                data=subset,
-                x='predicted',
-                y='actual',
-                ax=ax,
-                scatter=False,
-                line_kws={'color': 'red', 'linewidth': 1.6},
-            )
-            model = LinearRegression()
-            X = subset[['predicted']].to_numpy()
-            y = subset['actual'].to_numpy()
-            model.fit(X, y)
-            y_pred = model.predict(X)
-            r2 = r2_score(y, y_pred)
-            slope = model.coef_[0]
-            intercept = model.intercept_
+            min_val = min(subset['actual'].min(), subset['predicted'].min())
+            max_val = max(subset['actual'].max(), subset['predicted'].max())
+            ax.plot([min_val, max_val], [min_val, max_val], linestyle='--', color='gray', linewidth=1.2)
             best_model = subset['model'].iloc[0] if 'model' in subset.columns and not subset.empty else 'unknown'
             feature_set = subset['feature_set'].iloc[0] if 'feature_set' in subset.columns and not subset.empty else 'unknown'
+            cv_r2 = subset['cv_r2'].iloc[0] if 'cv_r2' in subset.columns else float('nan')
+            cv_rmse = subset['cv_rmse'].iloc[0] if 'cv_rmse' in subset.columns else float('nan')
             ax.text(0.03, 0.95, panel, transform=ax.transAxes, ha='left', va='top', fontsize=12, fontweight='bold')
             ax.text(0.05, 0.88, target, transform=ax.transAxes, ha='left', va='top', fontsize=11, fontweight='bold')
             ax.text(0.05, 0.79, f'model: {best_model}', transform=ax.transAxes, ha='left', va='top', fontsize=9)
@@ -294,14 +283,16 @@ def plot_predicted_vs_actual_panels(prediction_df: pd.DataFrame, output_path: Pa
             ax.text(
                 0.55,
                 0.10,
-                f'y = {slope:.3f}x {intercept:+.3f}\nR² = {r2:.3f}',
+                f'CV R² = {cv_r2:.3f}\nRMSE = {cv_rmse:.3f}',
                 transform=ax.transAxes,
                 ha='left',
                 va='bottom',
                 fontsize=10,
             )
-        ax.set_xlabel('Predicted concentration')
-        ax.set_ylabel('Actual concentration')
+            ax.set_xlim(min_val, max_val)
+            ax.set_ylim(min_val, max_val)
+        ax.set_xlabel('Actual concentration')
+        ax.set_ylabel('Predicted concentration')
 
     for idx in range(len(ordered_targets), len(axes)):
         axes[idx].axis('off')
