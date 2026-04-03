@@ -1,0 +1,21 @@
+{
+  "target": "beta2_microglobulin",
+  "model": "knn_regressor",
+  "feature_set": "all_absorbance_plus_machine_plus_personal",
+  "feature_scope": "selected",
+  "features": [
+    "absorbance_255nm",
+    "absorbance_275nm",
+    "dry_weight",
+    "age",
+    "absorbance_285nm",
+    "height_m",
+    "hourly_ultrafiltration_volume",
+    "target_ultrafiltration_volume"
+  ],
+  "metrics": {
+    "R2": 0.8724483257081643,
+    "RMSE": 260.282542063219,
+    "MAE": 150.03342569170724
+  }
+}

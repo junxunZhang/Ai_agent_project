@@ -44,47 +44,87 @@ def evaluate_regression(y_true: np.ndarray, y_pred: np.ndarray) -> Dict[str, flo
     }
 
 
-def fit_best_models(df: pd.DataFrame, best_models: pd.DataFrame, feature_sets: Dict[str, List[str]]) -> Dict[str, Pipeline]:
-    fitted_models: Dict[str, Pipeline] = {}
+def _resolve_features(
+    subset: pd.DataFrame,
+    target: str,
+    feature_set_name: str,
+    feature_sets: Dict[str, List[str]],
+    selected_map: Dict[Tuple[str, str], List[str]] | None = None,
+    feature_scope: str = 'full',
+) -> List[str]:
+    if feature_scope == 'selected' and selected_map is not None:
+        features = selected_map.get((target, feature_set_name), [])
+    else:
+        features = feature_sets[feature_set_name]
+    return [feature for feature in features if feature in subset.columns]
+
+
+def fit_best_models(
+    df: pd.DataFrame,
+    best_models: pd.DataFrame,
+    feature_sets: Dict[str, List[str]],
+    selected_map: Dict[Tuple[str, str], List[str]] | None = None,
+) -> Dict[Tuple[str, str, str, str], Pipeline]:
+    fitted_models: Dict[Tuple[str, str, str, str], Pipeline] = {}
     for _, row in best_models.iterrows():
         target = row['target']
         feature_set_name = row['feature_set']
         model_name = row['model']
+        feature_scope = row.get('feature_scope', 'full')
         subset = df.dropna(subset=[target]).copy()
-        features = [feature for feature in feature_sets[feature_set_name] if feature in subset.columns]
+        features = _resolve_features(subset, target, feature_set_name, feature_sets, selected_map, feature_scope)
         if not features:
             continue
         pipeline = make_pipeline(model_name)
         pipeline.fit(subset[features], subset[target])
-        fitted_models[target] = pipeline
+        setattr(pipeline, '_feature_names_for_fit', list(features))
+        fitted_models[(target, feature_set_name, feature_scope, model_name)] = pipeline
     return fitted_models
 
 
-def build_session_predictions(df: pd.DataFrame, best_models: pd.DataFrame, feature_sets: Dict[str, List[str]]) -> Dict[str, pd.DataFrame]:
-    fitted_models = fit_best_models(df, best_models, feature_sets)
+def build_session_predictions(
+    df: pd.DataFrame,
+    best_models: pd.DataFrame,
+    feature_sets: Dict[str, List[str]],
+    selected_map: Dict[Tuple[str, str], List[str]] | None = None,
+) -> Dict[str, pd.DataFrame]:
+    fitted_models = fit_best_models(df, best_models, feature_sets, selected_map)
     predictions: Dict[str, pd.DataFrame] = {}
     for _, row in best_models.iterrows():
         target = row['target']
         feature_set_name = row['feature_set']
+        feature_scope = row.get('feature_scope', 'full')
+        model_name = row['model']
         subset = df.dropna(subset=[target]).copy()
-        features = [feature for feature in feature_sets[feature_set_name] if feature in subset.columns]
-        if target not in fitted_models or not features:
+        features = _resolve_features(subset, target, feature_set_name, feature_sets, selected_map, feature_scope)
+        model_key = (target, feature_set_name, feature_scope, model_name)
+        if model_key not in fitted_models or not features:
+            continue
+        pipeline = fitted_models[model_key]
+        fitted_feature_names = getattr(pipeline, '_feature_names_for_fit', None)
+        if fitted_feature_names is None or list(features) != list(fitted_feature_names):
             continue
         subset = subset[['session_id', 'collection_time_min', target] + features].copy()
-        subset['predicted'] = fitted_models[target].predict(subset[features])
+        subset['predicted'] = pipeline.predict(subset[features])
         predictions[target] = subset[['session_id', 'collection_time_min', target, 'predicted']].rename(columns={target: 'actual'})
     return predictions
 
 
-def build_predicted_vs_actual_data(df: pd.DataFrame, best_models: pd.DataFrame, feature_sets: Dict[str, List[str]]) -> pd.DataFrame:
+def build_predicted_vs_actual_data(
+    df: pd.DataFrame,
+    best_models: pd.DataFrame,
+    feature_sets: Dict[str, List[str]],
+    selected_map: Dict[Tuple[str, str], List[str]] | None = None,
+) -> pd.DataFrame:
     rows = []
     cv = KFold(n_splits=N_SPLITS, shuffle=True, random_state=RANDOM_STATE)
     for _, row in best_models.iterrows():
         target = row['target']
         feature_set_name = row['feature_set']
         model_name = row['model']
+        feature_scope = row.get('feature_scope', 'full')
         subset = df.dropna(subset=[target]).copy()
-        features = [feature for feature in feature_sets[feature_set_name] if feature in subset.columns]
+        features = _resolve_features(subset, target, feature_set_name, feature_sets, selected_map, feature_scope)
         if not features or len(subset) < N_SPLITS:
             continue
         pipeline = make_pipeline(model_name)

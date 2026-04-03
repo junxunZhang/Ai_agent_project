@@ -12,7 +12,8 @@ from .feature_selection import (
     select_top_features_mutual_info,
 )
 from .feature_sets import get_feature_sets
-from .modeling import build_predicted_vs_actual_data, build_session_predictions, run_baselines
+from .model_persistence import build_session_predictions_from_saved_models, save_final_models
+from .modeling import build_predicted_vs_actual_data, run_baselines
 from .profiling import descriptive_statistics, missing_values_table, session_summary, summarize_dataset
 from .reporting import (
     write_analysis_summary,
@@ -59,8 +60,9 @@ def run() -> None:
     selected_results = run_baselines(analysis_df, feature_sets, selected_map=selected_map, feature_scope='selected')
     all_results = pd.concat([full_results, selected_results], ignore_index=True)
     best_models = summarize_best_models(all_results)
-    session_predictions = build_session_predictions(analysis_df, best_models, feature_sets)
-    predicted_vs_actual_df = build_predicted_vs_actual_data(analysis_df, best_models, feature_sets)
+    model_manifest = save_final_models(analysis_df, best_models, feature_sets, selected_map)
+    session_predictions = build_session_predictions_from_saved_models(analysis_df, best_models)
+    predicted_vs_actual_df = build_predicted_vs_actual_data(analysis_df, best_models, feature_sets, selected_map)
     importance_df = compute_permutation_importance(analysis_df, selected_map)
 
     comparison = full_results.merge(
@@ -80,6 +82,7 @@ def run() -> None:
     selected_results.to_csv(TABLES_DIR / 'selected_feature_results.csv', index=False)
     all_results.to_csv(TABLES_DIR / 'all_model_results.csv', index=False)
     best_models.to_csv(TABLES_DIR / 'best_model_summary.csv', index=False)
+    model_manifest.to_csv(TABLES_DIR / 'saved_model_manifest.csv', index=False)
     selection_summary.to_csv(TABLES_DIR / 'feature_selection_summary.csv', index=False)
     selected_features.to_csv(TABLES_DIR / 'selected_features_by_target.csv', index=False)
     comparison.to_csv(TABLES_DIR / 'model_comparison_full_vs_selected.csv', index=False)

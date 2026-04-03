@@ -1,0 +1,32 @@
+{
+  "target": "creatinine",
+  "model": "svr_rbf",
+  "feature_set": "all_absorbance_plus_machine_plus_personal",
+  "feature_scope": "full",
+  "features": [
+    "absorbance_255nm",
+    "absorbance_275nm",
+    "absorbance_310nm",
+    "absorbance_285nm",
+    "absorbance_295nm",
+    "venous_pressure",
+    "transmembrane_pressure",
+    "arterial_flow_rate",
+    "hourly_ultrafiltration_volume",
+    "target_ultrafiltration_volume",
+    "current_ultrafiltration_volume",
+    "current_dialysate_flow_rate",
+    "dialysate_ionic_concentration",
+    "dialysis_vintage_years",
+    "dry_weight",
+    "height_m",
+    "age",
+    "membrane_area",
+    "dialysis_day_type"
+  ],
+  "metrics": {
+    "R2": 0.9032001603331256,
+    "RMSE": 0.24368112059275981,
+    "MAE": 0.1369402850663779
+  }
+}

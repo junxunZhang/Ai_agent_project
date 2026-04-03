@@ -1,0 +1,7 @@
+target,model_path,metadata_path,model,feature_set,feature_scope,n_features,R2,RMSE,MAE
+acid_inferred_uric_acid,outputs/models/acid_inferred_uric_acid_model.joblib,outputs/models/acid_inferred_uric_acid_metadata.json,svr_rbf,all_absorbance_plus_machine_plus_personal,full,19,0.9137048935939994,0.15581008578970085,0.09903421034986441
+beta2_microglobulin,outputs/models/beta2_microglobulin_model.joblib,outputs/models/beta2_microglobulin_metadata.json,knn_regressor,all_absorbance_plus_machine_plus_personal,selected,8,0.8724483257081643,260.282542063219,150.03342569170724
+creatinine,outputs/models/creatinine_model.joblib,outputs/models/creatinine_metadata.json,svr_rbf,all_absorbance_plus_machine_plus_personal,full,19,0.9032001603331256,0.24368112059275981,0.1369402850663779
+phosphorus,outputs/models/phosphorus_model.joblib,outputs/models/phosphorus_metadata.json,svr_rbf,all_absorbance_plus_machine_plus_personal,full,19,0.8762301165335686,0.10268570602106838,0.07574803024401235
+potassium,outputs/models/potassium_model.joblib,outputs/models/potassium_metadata.json,knn_regressor,all_absorbance_plus_machine_plus_personal,full,19,0.6845543972791764,0.07486568050971122,0.04500144544195506
+urea,outputs/models/urea_model.joblib,outputs/models/urea_metadata.json,svr_rbf,all_absorbance_plus_machine_plus_personal,full,19,0.9377709790204389,2.041395898948531,1.0476099795814453
