@@ -4,23 +4,23 @@ from typing import Dict, Tuple
 
 import pandas as pd
 
-from .config import ID_COLUMNS, TARGET_COLUMNS
+from .config import TARGET_COLUMNS
 
 
 def summarize_dataset(df: pd.DataFrame) -> Dict[str, object]:
     session_counts = (
-        df.groupby(['Patient ID', 'Date'], dropna=False)
+        df.groupby(['patient_id', 'date'], dropna=False)
         .size()
         .reset_index(name='rows_per_session')
     )
-    collection_times = sorted(df['Collection time'].dropna().unique().tolist()) if 'Collection time' in df.columns else []
+    collection_times = sorted(df['collection_time_min'].dropna().unique().tolist()) if 'collection_time_min' in df.columns else []
 
     return {
         'rows': int(df.shape[0]),
         'columns': int(df.shape[1]),
         'missing_values': df.isna().sum().to_dict(),
         'duplicate_rows': int(df.duplicated().sum()),
-        'unique_patients': int(df['Patient ID'].nunique(dropna=True)) if 'Patient ID' in df.columns else 0,
+        'unique_patients': int(df['patient_id'].nunique(dropna=True)) if 'patient_id' in df.columns else 0,
         'target_missing': df[TARGET_COLUMNS].isna().sum().to_dict(),
         'session_count': int(session_counts.shape[0]),
         'collection_times': collection_times,
@@ -40,10 +40,10 @@ def missing_values_table(df: pd.DataFrame) -> pd.DataFrame:
 
 def session_summary(df: pd.DataFrame) -> pd.DataFrame:
     return (
-        df.groupby(['Patient ID', 'Date'], dropna=False)
-        .agg(rows_per_session=('Collection time', 'size'), min_time=('Collection time', 'min'), max_time=('Collection time', 'max'))
+        df.groupby(['patient_id', 'date'], dropna=False)
+        .agg(rows_per_session=('collection_time_min', 'size'), min_time=('collection_time_min', 'min'), max_time=('collection_time_min', 'max'))
         .reset_index()
-        .sort_values(['Patient ID', 'Date'])
+        .sort_values(['patient_id', 'date'])
     )
 
 

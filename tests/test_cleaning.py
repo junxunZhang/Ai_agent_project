@@ -13,7 +13,7 @@ def test_clean_dataset_drops_empty_rows_and_sorts():
     )
     cleaned = clean_dataset(df)
     assert len(cleaned) == 2
-    assert cleaned.iloc[0]['Collection time'] == 0
+    assert cleaned.iloc[0]['collection_time_min'] == 0
 
 
 def test_build_analysis_dataset_creates_session_id():
@@ -23,3 +23,4 @@ def test_build_analysis_dataset_creates_session_id():
     result = build_analysis_dataset(df)
     assert 'session_id' in result.columns
     assert result.iloc[0]['session_id'] == '2_20230102'
+    assert 'patient_id' in result.columns

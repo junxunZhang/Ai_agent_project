@@ -38,6 +38,9 @@ def run() -> None:
     best_models = summarize_best_models(results)
 
     analysis_df.head(20).to_csv(TABLES_DIR / 'cleaned_dataset_preview.csv', index=False)
+    pd.DataFrame([
+        {'feature_set': name, 'features': ', '.join(cols)} for name, cols in feature_sets.items()
+    ]).to_csv(TABLES_DIR / 'feature_metadata.csv', index=False)
     missing_table.to_csv(TABLES_DIR / 'missing_values.csv', index=False)
     desc_stats.to_csv(TABLES_DIR / 'descriptive_stats.csv')
     sessions.to_csv(TABLES_DIR / 'session_summary.csv', index=False)
