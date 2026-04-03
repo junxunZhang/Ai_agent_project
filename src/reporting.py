@@ -50,8 +50,61 @@ def write_analysis_summary(results: pd.DataFrame, best_models: pd.DataFrame, out
     else:
         for _, row in best_models.iterrows():
             lines.append(
-                f"- {row['target']}: {row['model']} with {row['feature_set']} | "
+                f"- {row['target']}: {row['model']} with {row['feature_set']} ({row['feature_scope']}) | "
                 f"MAE={row['MAE']:.4f}, RMSE={row['RMSE']:.4f}, R²={row['R2']:.4f}"
+            )
+
+    output_path.write_text('\n'.join(lines), encoding='utf-8')
+    return output_path
+
+
+def write_feature_selection_report(
+    selected_df: pd.DataFrame,
+    importance_df: pd.DataFrame,
+    comparison_df: pd.DataFrame,
+    output_path: Path | None = None,
+) -> Path:
+    output_path = output_path or REPORTS_DIR / 'feature_selection_report.md'
+    lines = [
+        '# Feature Selection Report',
+        '',
+        '## Method',
+        '',
+        '- Primary selection method: mutual information regression',
+        '- Importance refinement: permutation importance using SVR on selected features',
+        '- Comparison: full feature sets vs selected feature subsets under 5-fold cross-validation',
+        '',
+        '## Selected-feature summary',
+        '',
+    ]
+
+    if selected_df.empty:
+        lines.append('No selected features available.')
+    else:
+        for (target, feature_set), group in selected_df.groupby(['target', 'feature_set']):
+            features = ', '.join(group.sort_values('selection_score', ascending=False)['feature'].tolist())
+            lines.append(f'- {target} | {feature_set}: {features}')
+
+    lines.extend(['', '## Highest permutation-importance features', ''])
+    if importance_df.empty:
+        lines.append('No permutation importance results available.')
+    else:
+        for target, group in importance_df.groupby('target'):
+            top_group = group.sort_values('permutation_importance_mean', ascending=False).head(5)
+            feature_text = ', '.join(
+                f"{row['feature']} ({row['permutation_importance_mean']:.3f})" for _, row in top_group.iterrows()
+            )
+            lines.append(f'- {target}: {feature_text}')
+
+    lines.extend(['', '## Performance change after feature selection', ''])
+    if comparison_df.empty:
+        lines.append('No comparison rows available.')
+    else:
+        for _, row in comparison_df.iterrows():
+            lines.append(
+                f"- {row['target']} | {row['feature_set']} | {row['model']}: "
+                f"R² full={row['R2_full']:.4f}, R² selected={row['R2_selected']:.4f}, "
+                f"ΔR²={row['delta_R2']:.4f}"
             )
 
     output_path.write_text('\n'.join(lines), encoding='utf-8')
@@ -66,7 +119,7 @@ def write_limitations_report(output_path: Path | None = None) -> Path:
         '## Limitations',
         '',
         '- The dataset is relatively small and includes repeated measurements within dialysis sessions.',
-        '- `Acid` is mapped cautiously to uric acid based on workbook structure, not explicit labeling.',
+        '- `acid_inferred_uric_acid` is mapped cautiously to uric acid based on workbook structure, not explicit labeling.',
         '- Some patient-level fields appear inconsistent across records and should be reviewed with domain knowledge.',
         '- This project emphasizes a clean baseline rather than full hyperparameter optimization.',
         '',
@@ -74,8 +127,8 @@ def write_limitations_report(output_path: Path | None = None) -> Path:
         '',
         '- Add grouped cross-validation by session or patient.',
         '- Confirm biochemical label semantics with domain experts.',
-        '- Evaluate the contribution of extra absorbance wavelengths (285nm, 295nm).',
-        '- Add permutation importance and residual diagnostics for deeper interpretability.',
+        '- Test nested CV and tuning for SVR and tree-based models.',
+        '- Add residual diagnostics for session-level drift analysis.',
     ]
     output_path.write_text('\n'.join(lines), encoding='utf-8')
     return output_path

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import math
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -71,6 +70,18 @@ def plot_correlation_heatmap(df: pd.DataFrame, output_path: Path | None = None) 
     ax.set_title('Correlation Heatmap: Core Absorbance and Targets')
     fig.tight_layout()
     fig.savefig(output_path, dpi=200)
+    plt.close(fig)
+    return output_path
+
+
+def plot_full_feature_correlation_heatmap(df: pd.DataFrame, output_path: Path | None = None) -> Path:
+    output_path = output_path or FIGURES_DIR / 'full_feature_correlation_heatmap.png'
+    corr = df.select_dtypes(include='number').corr(numeric_only=True)
+    fig, ax = plt.subplots(figsize=(16, 14))
+    sns.heatmap(corr, cmap='coolwarm', center=0, ax=ax)
+    ax.set_title('Full Feature Correlation Heatmap')
+    fig.tight_layout()
+    fig.savefig(output_path, dpi=220)
     plt.close(fig)
     return output_path
 
@@ -163,6 +174,48 @@ def plot_model_comparison(results: pd.DataFrame, output_path: Path | None = None
     return output_path
 
 
+def plot_feature_selection_comparison(results: pd.DataFrame, output_path: Path | None = None) -> Path:
+    output_path = output_path or FIGURES_DIR / 'feature_selection_comparison.png'
+    plot_df = pd.concat([
+        results[['target', 'feature_set', 'model', 'R2_full']].rename(columns={'R2_full': 'R2'}).assign(feature_scope='full'),
+        results[['target', 'feature_set', 'model', 'R2_selected']].rename(columns={'R2_selected': 'R2'}).assign(feature_scope='selected'),
+    ], ignore_index=True)
+    fig, ax = plt.subplots(figsize=(14, 6))
+    sns.barplot(data=plot_df, x='target', y='R2', hue='feature_scope', ax=ax)
+    ax.set_title('Model Performance Before and After Feature Selection (R²)')
+    ax.set_ylim(min(plot_df['R2'].min() - 0.1, -1), 1)
+    fig.tight_layout()
+    fig.savefig(output_path, dpi=220)
+    plt.close(fig)
+    return output_path
+
+
+def plot_feature_importance_by_target(importance_df: pd.DataFrame, output_path: Path | None = None) -> Path:
+    output_path = output_path or FIGURES_DIR / 'feature_importance_by_target.png'
+    targets = importance_df['target'].dropna().unique().tolist()
+    fig, axes = plt.subplots(2, 3, figsize=(16, 10))
+    axes = axes.flatten()
+
+    for ax, target in zip(axes, targets[:6]):
+        subset = (
+            importance_df[importance_df['target'] == target]
+            .sort_values('permutation_importance_mean', ascending=False)
+            .head(8)
+        )
+        sns.barplot(data=subset, x='permutation_importance_mean', y='feature', ax=ax, color='#8172B2')
+        ax.set_title(target)
+        ax.set_xlabel('Permutation Importance (mean ΔR²)')
+        ax.set_ylabel('Feature')
+
+    for idx in range(len(targets[:6]), len(axes)):
+        axes[idx].axis('off')
+
+    fig.tight_layout()
+    fig.savefig(output_path, dpi=220)
+    plt.close(fig)
+    return output_path
+
+
 def plot_session_prediction_curves(session_predictions: dict[str, pd.DataFrame], output_path: Path | None = None) -> Path:
     output_path = output_path or FIGURES_DIR / 'session_prediction_curves_best_models.png'
     ordered_targets = [target for target in TARGET_COLUMNS if target in session_predictions]
@@ -186,7 +239,7 @@ def plot_session_prediction_curves(session_predictions: dict[str, pd.DataFrame],
         ax.text(
             0.03,
             0.08,
-            f"session: {session_id}",
+            f'session: {session_id}',
             transform=ax.transAxes,
             ha='left',
             va='bottom',

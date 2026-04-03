@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 import numpy as np
 import pandas as pd
@@ -72,15 +72,23 @@ def build_session_predictions(df: pd.DataFrame, best_models: pd.DataFrame, featu
     return predictions
 
 
-def run_baselines(df: pd.DataFrame, feature_sets: Dict[str, List[str]]) -> pd.DataFrame:
+def run_baselines(
+    df: pd.DataFrame,
+    feature_sets: Dict[str, List[str]],
+    selected_map: Dict[Tuple[str, str], List[str]] | None = None,
+    feature_scope: str = 'full',
+) -> pd.DataFrame:
     rows = []
     cv = KFold(n_splits=N_SPLITS, shuffle=True, random_state=RANDOM_STATE)
 
     for target in TARGET_COLUMNS:
         subset = df.dropna(subset=[target]).copy()
         for feature_set_name, features in feature_sets.items():
-            available_features = [feature for feature in features if feature in subset.columns]
-            X = subset[available_features]
+            if selected_map is None:
+                active_features = [feature for feature in features if feature in subset.columns]
+            else:
+                active_features = [feature for feature in selected_map.get((target, feature_set_name), []) if feature in subset.columns]
+            X = subset[active_features]
             y = subset[target]
             if X.empty or len(y) < N_SPLITS:
                 continue
@@ -92,10 +100,11 @@ def run_baselines(df: pd.DataFrame, feature_sets: Dict[str, List[str]]) -> pd.Da
                 rows.append({
                     'target': target,
                     'feature_set': feature_set_name,
+                    'feature_scope': feature_scope,
                     'model': model_name,
                     'n_samples': int(len(y)),
                     'n_features': int(X.shape[1]),
                     **metrics,
                 })
 
-    return pd.DataFrame(rows).sort_values(['target', 'R2', 'RMSE'], ascending=[True, False, True]).reset_index(drop=True)
+    return pd.DataFrame(rows).sort_values(['target', 'feature_scope', 'R2', 'RMSE'], ascending=[True, True, False, True]).reset_index(drop=True)
