@@ -12,7 +12,7 @@ from .feature_selection import (
     select_top_features_mutual_info,
 )
 from .feature_sets import get_feature_sets
-from .modeling import build_session_predictions, run_baselines
+from .modeling import build_predicted_vs_actual_data, build_session_predictions, run_baselines
 from .profiling import descriptive_statistics, missing_values_table, session_summary, summarize_dataset
 from .reporting import (
     write_analysis_summary,
@@ -31,6 +31,7 @@ from .visualization import (
     plot_linear_regression_lines_by_target,
     plot_missing_values,
     plot_model_comparison,
+    plot_predicted_vs_actual_panels,
     plot_session_prediction_curves,
     plot_target_distributions,
 )
@@ -59,6 +60,7 @@ def run() -> None:
     all_results = pd.concat([full_results, selected_results], ignore_index=True)
     best_models = summarize_best_models(all_results)
     session_predictions = build_session_predictions(analysis_df, best_models, feature_sets)
+    predicted_vs_actual_df = build_predicted_vs_actual_data(analysis_df, best_models, feature_sets)
     importance_df = compute_permutation_importance(analysis_df, selected_map)
 
     comparison = full_results.merge(
@@ -102,6 +104,9 @@ def run() -> None:
         plot_feature_importance_by_target(importance_df)
     if session_predictions:
         plot_session_prediction_curves(session_predictions)
+    if not predicted_vs_actual_df.empty:
+        predicted_vs_actual_df.to_csv(TABLES_DIR / 'predicted_vs_actual_points.csv', index=False)
+        plot_predicted_vs_actual_panels(predicted_vs_actual_df)
 
 
 if __name__ == '__main__':

@@ -256,3 +256,53 @@ def plot_session_prediction_curves(session_predictions: dict[str, pd.DataFrame],
     fig.savefig(output_path, dpi=220)
     plt.close(fig)
     return output_path
+
+
+def plot_predicted_vs_actual_panels(prediction_df: pd.DataFrame, output_path: Path | None = None) -> Path:
+    output_path = output_path or FIGURES_DIR / 'predicted_vs_actual_panels.png'
+    ordered_targets = [target for target in TARGET_COLUMNS if target in prediction_df['target'].unique()]
+    fig, axes = plt.subplots(2, 3, figsize=(16, 10))
+    axes = axes.flatten()
+    panel_labels = ['(A)', '(B)', '(C)', '(D)', '(E)', '(F)']
+
+    for ax, target, panel in zip(axes, ordered_targets, panel_labels):
+        subset = prediction_df[prediction_df['target'] == target].dropna(subset=['predicted', 'actual']).copy()
+        sns.scatterplot(data=subset, x='predicted', y='actual', ax=ax, color='black', s=18, edgecolor='none')
+        if len(subset) >= 2:
+            sns.regplot(
+                data=subset,
+                x='predicted',
+                y='actual',
+                ax=ax,
+                scatter=False,
+                line_kws={'color': 'red', 'linewidth': 1.6},
+            )
+            model = LinearRegression()
+            X = subset[['predicted']].to_numpy()
+            y = subset['actual'].to_numpy()
+            model.fit(X, y)
+            y_pred = model.predict(X)
+            r2 = r2_score(y, y_pred)
+            slope = model.coef_[0]
+            intercept = model.intercept_
+            ax.text(0.03, 0.95, panel, transform=ax.transAxes, ha='left', va='top', fontsize=12, fontweight='bold')
+            ax.text(0.05, 0.88, target, transform=ax.transAxes, ha='left', va='top', fontsize=11, fontweight='bold')
+            ax.text(
+                0.55,
+                0.10,
+                f'y = {slope:.3f}x {intercept:+.3f}\nR² = {r2:.3f}',
+                transform=ax.transAxes,
+                ha='left',
+                va='bottom',
+                fontsize=10,
+            )
+        ax.set_xlabel('Predicted concentration')
+        ax.set_ylabel('Actual concentration')
+
+    for idx in range(len(ordered_targets), len(axes)):
+        axes[idx].axis('off')
+
+    fig.tight_layout()
+    fig.savefig(output_path, dpi=220)
+    plt.close(fig)
+    return output_path

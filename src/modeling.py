@@ -72,6 +72,31 @@ def build_session_predictions(df: pd.DataFrame, best_models: pd.DataFrame, featu
     return predictions
 
 
+def build_predicted_vs_actual_data(df: pd.DataFrame, best_models: pd.DataFrame, feature_sets: Dict[str, List[str]]) -> pd.DataFrame:
+    fitted_models = fit_best_models(df, best_models, feature_sets)
+    rows = []
+    for _, row in best_models.iterrows():
+        target = row['target']
+        feature_set_name = row['feature_set']
+        subset = df.dropna(subset=[target]).copy()
+        features = [feature for feature in feature_sets[feature_set_name] if feature in subset.columns]
+        if target not in fitted_models or not features:
+            continue
+        preds = fitted_models[target].predict(subset[features])
+        tmp = pd.DataFrame({
+            'target': target,
+            'actual': subset[target].to_numpy(),
+            'predicted': preds,
+            'model': row['model'],
+            'feature_set': feature_set_name,
+            'feature_scope': row['feature_scope'],
+        })
+        rows.append(tmp)
+    if not rows:
+        return pd.DataFrame(columns=['target', 'actual', 'predicted', 'model', 'feature_set', 'feature_scope'])
+    return pd.concat(rows, ignore_index=True)
+
+
 def run_baselines(
     df: pd.DataFrame,
     feature_sets: Dict[str, List[str]],
