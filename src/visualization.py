@@ -92,6 +92,40 @@ def plot_linear_regression_lines_by_target(df: pd.DataFrame, output_path: Path |
     return output_path
 
 
+def plot_core_wavelength_regression_grid(df: pd.DataFrame, output_path: Path | None = None) -> Path:
+    output_path = output_path or FIGURES_DIR / 'core_wavelength_regression_grid.png'
+    fig, axes = plt.subplots(len(TARGET_COLUMNS), len(CORE_ABSORBANCE_COLUMNS), figsize=(16, 24))
+
+    for row_idx, target in enumerate(TARGET_COLUMNS):
+        for col_idx, feature in enumerate(CORE_ABSORBANCE_COLUMNS):
+            ax = axes[row_idx, col_idx]
+            subset = df[[feature, target]].dropna()
+            sns.regplot(
+                data=subset,
+                x=feature,
+                y=target,
+                ax=ax,
+                scatter_kws={'s': 16, 'alpha': 0.55},
+                line_kws={'color': 'red', 'linewidth': 1.8},
+            )
+            if row_idx == 0:
+                ax.set_title(feature)
+            if col_idx == 0:
+                ax.set_ylabel(target)
+            else:
+                ax.set_ylabel('')
+            if row_idx == len(TARGET_COLUMNS) - 1:
+                ax.set_xlabel(feature)
+            else:
+                ax.set_xlabel('')
+
+    fig.suptitle('Linear Regression Comparison Across Core Wavelengths and Toxin Targets', y=0.995)
+    fig.tight_layout(rect=[0, 0, 1, 0.985])
+    fig.savefig(output_path, dpi=220)
+    plt.close(fig)
+    return output_path
+
+
 def plot_model_comparison(results: pd.DataFrame, output_path: Path | None = None) -> Path:
     output_path = output_path or FIGURES_DIR / 'model_comparison_r2.png'
     fig, ax = plt.subplots(figsize=(12, 6))

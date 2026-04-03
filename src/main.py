@@ -15,6 +15,7 @@ from .reporting import write_analysis_summary, write_dataset_profile, write_limi
 from .utils import ensure_directories
 from .visualization import (
     plot_absorbance_scatter_grid,
+    plot_core_wavelength_regression_grid,
     plot_correlation_heatmap,
     plot_linear_regression_lines_by_target,
     plot_missing_values,
@@ -57,6 +58,7 @@ def run() -> None:
     plot_correlation_heatmap(analysis_df)
     plot_absorbance_scatter_grid(analysis_df)
     plot_linear_regression_lines_by_target(analysis_df)
+    plot_core_wavelength_regression_grid(analysis_df)
     if not results.empty:
         plot_model_comparison(results)
 
