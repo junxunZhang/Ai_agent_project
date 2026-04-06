@@ -382,6 +382,53 @@ def plot_model_comparison_r2_grouped_clean(results_df: pd.DataFrame, output_path
     return output_path
 
 
+def plot_predicted_vs_actual_panels_grouped_unseen_v2(prediction_df: pd.DataFrame, results_df: pd.DataFrame, output_path: Path | None = None) -> Path:
+    output_path = output_path or FIGURES_DIR / 'predicted_vs_actual_panels_grouped_unseen_sessions_v2.png'
+    ordered_targets = [target for target in TARGET_COLUMNS if target in prediction_df['target'].unique()]
+    fig, axes = plt.subplots(2, 3, figsize=(17, 10.5))
+    axes = axes.flatten()
+    panel_labels = ['(A)', '(B)', '(C)', '(D)', '(E)', '(F)']
+
+    for ax, target, panel in zip(axes, ordered_targets, panel_labels):
+        target_results = results_df[results_df['target'] == target].sort_values(['R2', 'RMSE'], ascending=[False, True])
+        if target_results.empty:
+            ax.axis('off')
+            continue
+        best_row = target_results.iloc[0]
+        subset = prediction_df[
+            (prediction_df['target'] == target)
+            & (prediction_df['feature_set'] == best_row['feature_set'])
+            & (prediction_df['model'] == best_row['model'])
+        ].dropna(subset=['predicted', 'actual']).copy()
+        if subset.empty:
+            ax.axis('off')
+            continue
+
+        sns.scatterplot(data=subset, x='actual', y='predicted', ax=ax, color='black', s=18, edgecolor='none')
+        min_val = min(subset['actual'].min(), subset['predicted'].min())
+        max_val = max(subset['actual'].max(), subset['predicted'].max())
+        ax.plot([min_val, max_val], [min_val, max_val], linestyle='--', color='gray', linewidth=1.2)
+        ax.text(0.03, 0.95, panel, transform=ax.transAxes, ha='left', va='top', fontsize=12, fontweight='bold')
+        ax.text(0.05, 0.88, target, transform=ax.transAxes, ha='left', va='top', fontsize=11, fontweight='bold')
+        ax.text(0.05, 0.79, 'selected by: max R², tie-break min RMSE', transform=ax.transAxes, ha='left', va='top', fontsize=8.2)
+        ax.text(0.05, 0.72, f"model: {best_row['model']}", transform=ax.transAxes, ha='left', va='top', fontsize=9)
+        ax.text(0.05, 0.65, f"features: {best_row['feature_set']}", transform=ax.transAxes, ha='left', va='top', fontsize=8)
+        ax.text(0.54, 0.10, f"Grouped CV R² = {best_row['R2']:.3f}\nRMSE = {best_row['RMSE']:.3f}", transform=ax.transAxes, ha='left', va='bottom', fontsize=10)
+        ax.set_xlim(min_val, max_val)
+        ax.set_ylim(min_val, max_val)
+        ax.set_xlabel('Actual concentration')
+        ax.set_ylabel('Predicted concentration')
+
+    for idx in range(len(ordered_targets), len(axes)):
+        axes[idx].axis('off')
+
+    fig.suptitle('Predicted vs Actual — Grouped Unseen Sessions (Consistent Best-Model Selection)', y=0.995)
+    fig.tight_layout(rect=[0, 0, 1, 0.98])
+    fig.savefig(output_path, dpi=240, bbox_inches='tight')
+    plt.close(fig)
+    return output_path
+
+
 def plot_predicted_vs_actual_panels(prediction_df: pd.DataFrame, output_path: Path | None = None) -> Path:
     output_path = output_path or FIGURES_DIR / 'predicted_vs_actual_panels_final.png'
     ordered_targets = [target for target in TARGET_COLUMNS if target in prediction_df['target'].unique()]
