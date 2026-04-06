@@ -258,6 +258,63 @@ def plot_session_prediction_curves(session_predictions: dict[str, pd.DataFrame],
     return output_path
 
 
+def plot_unseen_session_prediction_curves(results_df: pd.DataFrame, prediction_df: pd.DataFrame, output_path: Path | None = None) -> Path:
+    output_path = output_path or FIGURES_DIR / 'session_prediction_curves_unseen_sessions.png'
+    ordered_targets = [target for target in TARGET_COLUMNS if target in prediction_df['target'].unique()]
+    fig, axes = plt.subplots(2, 3, figsize=(16, 10))
+    axes = axes.flatten()
+
+    for ax, target in zip(axes, ordered_targets):
+        target_results = results_df[results_df['target'] == target].sort_values(['R2', 'RMSE'], ascending=[False, True])
+        if target_results.empty:
+            ax.axis('off')
+            continue
+        best_row = target_results.iloc[0]
+        target_preds = prediction_df[
+            (prediction_df['target'] == target)
+            & (prediction_df['feature_set'] == best_row['feature_set'])
+            & (prediction_df['model'] == best_row['model'])
+        ].copy()
+        if target_preds.empty:
+            ax.axis('off')
+            continue
+
+        session_error = (
+            target_preds.groupby('session_id')
+            .apply(lambda g: ((g['actual'] - g['predicted']) ** 2).mean())
+            .sort_values()
+        )
+        median_idx = len(session_error) // 2
+        session_id = session_error.index[median_idx]
+        plot_df = target_preds[target_preds['session_id'] == session_id].sort_values('collection_time_min')
+
+        ax.plot(plot_df['collection_time_min'], plot_df['predicted'], color='black', linewidth=1.8, label='Predicted conc.')
+        ax.scatter(plot_df['collection_time_min'], plot_df['actual'], color='red', s=26, marker='^', label='Actual conc.')
+        ax.set_title(target)
+        ax.set_xlabel('HD time (min)')
+        ax.set_ylabel('Concentration')
+        ax.text(
+            0.03,
+            0.08,
+            f"session: {session_id}\nmodel: {best_row['model']}\nR²: {best_row['R2']:.3f}",
+            transform=ax.transAxes,
+            ha='left',
+            va='bottom',
+            fontsize=8.5,
+            bbox={'boxstyle': 'round,pad=0.2', 'facecolor': 'white', 'alpha': 0.78, 'edgecolor': 'gray'},
+        )
+        ax.legend(loc='best', fontsize=8, frameon=False)
+
+    for idx in range(len(ordered_targets), len(axes)):
+        axes[idx].axis('off')
+
+    fig.suptitle('Unseen-Session Prediction Curves from Grouped Cross-Validation', y=0.995)
+    fig.tight_layout(rect=[0, 0, 1, 0.98])
+    fig.savefig(output_path, dpi=220)
+    plt.close(fig)
+    return output_path
+
+
 def plot_predicted_vs_actual_panels(prediction_df: pd.DataFrame, output_path: Path | None = None) -> Path:
     output_path = output_path or FIGURES_DIR / 'predicted_vs_actual_panels_final.png'
     ordered_targets = [target for target in TARGET_COLUMNS if target in prediction_df['target'].unique()]
